@@ -1,0 +1,68 @@
+openapi: 3.0.0
+info:
+  description: Send email by SendGrid
+  version: 1.0.0
+  title: Send inquiry email API
+  contact:
+    email: haruki.lo.shelon@gmail.com
+servers:
+  - url: 'http://localhost:8080/'
+    description: 'API サーバー'
+tags:
+  - name: SendEmail
+    description: Send an inquiry email
+# schemes:
+#   - https
+#   - http
+paths:
+  /post:
+    post:
+      tags:
+        - SendEmail
+      summary: Send an inquiry email
+      description: 'Reserve a json data, then it send an email by using SendGrid.'
+      parameters:
+        - in: header
+          name: Email
+          description: Email object that is needed to send
+          required: true
+          schema:
+            $ref: '#/components/schemas/RequestBody'
+      responses:
+        '200':
+          description: Sent an email
+components:
+  schemas:
+    # 共通モデル
+    Name:
+      type: string
+      description: User's name
+    Subject:
+      type: string
+      description: Email's subject
+    Text:
+      type: string
+      description: Inquiry contents
+    Email:
+      type: string
+      description: User's email address
+    RequestBody:
+        type: object
+        required:
+          - Name
+          - Subject
+          - Text
+          - Email
+        properties:
+          Name:
+            $ref: '#/components/schemas/Name'
+          Subject:
+            $ref: '#/components/schemas/Subject'
+          Text:
+            $ref: '#/components/schemas/Text'
+          Email:
+            $ref: '#/components/schemas/Email'
+
+externalDocs:
+  description: More information about this api
+  url: https://qiita.com/haruki-lo-shelon/items/3ed239d5479f84b10384
