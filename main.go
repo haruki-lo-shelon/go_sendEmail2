@@ -19,5 +19,5 @@ func main() {
 		log.Fatal(err)
 	}
 	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(":12345", api.MakeHandler()))
+	log.Fatal(http.ListenAndServe(":8080", api.MakeHandler()))
 }

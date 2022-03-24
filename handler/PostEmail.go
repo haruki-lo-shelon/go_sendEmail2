@@ -12,20 +12,16 @@ import (
 
 	"github.com/ant0ine/go-json-rest/rest"
 	"net/http"
-	"sync"
 )
 
 //メールの構造体
 type Email struct {
-	Name    string
-	Subject string
+	// Name		string
+	// Subject	string
+	Tokumemo_API_KEY	string	//追加
 	Text    string
 	Email   string
 }
-
-var store = map[string]*Email{}
-
-var lock = sync.RWMutex{}
 
 //送信する関数
 func PostEmail(w rest.ResponseWriter, r *rest.Request) {
@@ -36,14 +32,11 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 			return
 	}
 
+	//送信元のメールアドレスが空ならエラー
 	if SendToEmail.Email == "" {
 			rest.Error(w, "mail required", 400)
 			return
 	}
-
-	lock.Lock()
-	store[SendToEmail.Name] = &SendToEmail
-	lock.Unlock()
 
 	err_read := godotenv.Load()
 	if err_read != nil {
@@ -51,9 +44,19 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 	}
 
 	// .envから環境変数読み込み
-	API_KEY := os.Getenv("API_KEY")
+	SendGrid_API_KEY := os.Getenv("SendGrid_API_KEY")
 	TOS := strings.Split(os.Getenv("TOS"), ",")
 	fr := SendToEmail.Email//postした値に含めたメールアドレス（送信者のメアド）
+	Tokumemo_API_KEY := os.Getenv("Tokumemo_API_KEY")
+
+	//TokumemoのAPIキーを検証
+	if SendToEmail.Tokumemo_API_KEY != Tokumemo_API_KEY {
+		rest.Error(w, "correct apiKey required", 400)
+		return
+	} else {
+		//検証が終わったら隠す
+		SendToEmail.Tokumemo_API_KEY = "xxxxxxxxx"
+	}
 
 	// メッセージの構築
 	message := mail.NewV3Mail()
@@ -67,23 +70,23 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 	EmailDestination.AddTos(to)
 
 	//残りのpostされた値を変数に格納
-	name := SendToEmail.Name
-	subject := SendToEmail.Subject
+	// name := SendToEmail.Name
+	// subject := SendToEmail.Subject
 	text := SendToEmail.Text
 
-	EmailDestination.SetSubstitution("%name%", name)
-	EmailDestination.SetSubstitution("%m_subject%", subject)
+	// EmailDestination.SetSubstitution("%name%", name)
+	// EmailDestination.SetSubstitution("%m_subject%", subject)
 	EmailDestination.SetSubstitution("%m_text%", text)
 	message.AddPersonalizations(EmailDestination)
 
 	// 2つ目の宛先と、対応するSubstitutionタグを指定
-	// EmailDestination2 := mail.NewPersonalization()
-	// to2 := mail.NewEmail("", TOS[1])
-	// EmailDestination2.AddTos(to2)
+	EmailDestination2 := mail.NewPersonalization()
+	to2 := mail.NewEmail("", TOS[1])
+	EmailDestination2.AddTos(to2)
 	// EmailDestination2.SetSubstitution("%name%", name)
 	// EmailDestination2.SetSubstitution("%m_subject%", subject)
-	// EmailDestination2.SetSubstitution("%m_text%", text)
-	// message.AddPersonalizations(EmailDestination2)
+	EmailDestination2.SetSubstitution("%m_text%", text)
+	message.AddPersonalizations(EmailDestination2)
 
 	// 3つ目の宛先と、対応するSubstitutionタグを指定
 	// EmailDestination3 := mail.NewPersonalization()
@@ -95,7 +98,7 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 	// message.AddPersonalizations(EmailDestination3)
 
 	// 件名を設定
-	message.Subject = "%m_subject%"
+	message.Subject = "ユーザーからのお問い合わせ"
 	// テキストパートを設定
 	c := mail.NewContent("text/plain", "%m_text%\r\n")
 	message.AddContent(c)
@@ -104,7 +107,7 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 	// message.AddContent(c)
 
 	// カテゴリ情報を付加
-	message.AddCategories("category1")
+	// message.AddCategories("category1")
 	// カスタムヘッダを指定
 	message.SetHeader("X-Sent-Using", "SendGrid-API")
 	// 画像ファイルを添付
@@ -120,7 +123,7 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 	// message.AddAttachment(a)
 
 	// メール送信を行い、レスポンスを表示
-	client := sendgrid.NewSendClient(API_KEY)
+	client := sendgrid.NewSendClient(SendGrid_API_KEY)
 	response, err := client.Send(message)
 	if err != nil {
 		log.Println(err)
