@@ -4,7 +4,6 @@ import (
 	"go_sendmail/handler"
 	"log"
 	"net/http"
-
 	"github.com/ant0ine/go-json-rest/rest"
 )
 

@@ -18,13 +18,15 @@ import (
 type Email struct {
 	// Name		string
 	// Subject	string
-	Tokumemo_API_KEY	string	//追加
 	Text    string
 	Email   string
 }
 
 //送信する関数
 func PostEmail(w rest.ResponseWriter, r *rest.Request) {
+	//送られてきたAuthorizationヘッダの部分（APIキー）を取り出す
+	Sent_Tokumemo_API_KEY := r.Header["Authorization"]
+
 	SendToEmail := Email{}
 	err := r.DecodeJsonPayload(&SendToEmail)//sendにpost値を入れる
 	if err != nil {
@@ -47,15 +49,13 @@ func PostEmail(w rest.ResponseWriter, r *rest.Request) {
 	SendGrid_API_KEY := os.Getenv("SendGrid_API_KEY")
 	TOS := strings.Split(os.Getenv("TOS"), ",")
 	fr := SendToEmail.Email//postした値に含めたメールアドレス（送信者のメアド）
+	// .envからTokumemo_API_KEYを取得
 	Tokumemo_API_KEY := os.Getenv("Tokumemo_API_KEY")
 
 	//TokumemoのAPIキーを検証
-	if SendToEmail.Tokumemo_API_KEY != Tokumemo_API_KEY {
+	if Sent_Tokumemo_API_KEY[0] != Tokumemo_API_KEY {
 		rest.Error(w, "correct apiKey required", 400)
 		return
-	} else {
-		//検証が終わったら隠す
-		SendToEmail.Tokumemo_API_KEY = "xxxxxxxxx"
 	}
 
 	// メッセージの構築
